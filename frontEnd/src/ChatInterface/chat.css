@@ -1,0 +1,33 @@
+#chatPage {
+    height: 100vh;
+    width: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+#messageLog {
+    max-height: 90vh;
+    min-height: 90vh;
+    overflow-y: scroll;
+}
+#chatInput {
+    /* maybe position fix this to the bottom with a white background */
+    height: 10vh;
+    padding: 20px;
+}
+
+
+input {
+    text-decoration: none;
+    border: none;
+    border-bottom: 2px solid #333;
+    width: 100%;
+    margin: 10px;
+    padding-bottom: 5px;
+    font-size: 22px;
+    box-shadow: none;
+}
+input:focus {
+    outline: none;
+}

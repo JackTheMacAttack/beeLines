@@ -17,10 +17,8 @@ const assistant = new AssistantV2({
 //Route to handle session tokens
 //GET REQUESTS 
 router.get("/session", async (req, res) => {
-    console.log("Getting session ... ")
-    // console.log(assistant)
     try {
-        console.log("Got Session!")
+        // console.log("Got Session!")
         const session = await assistant.createSession({
             assistantId:process.env.WATSON_ASSISTANT_ID
         })
@@ -36,20 +34,17 @@ router.get("/session", async (req, res) => {
 router.post('/message', async (req,res) => {
 
     console.log('Trying to send message')
-
-    //construct payload
-    payload = {
-        assistantId: process.env.WATSON_ASSISTANT_ID,
-        sessionId: req.headers.session_id,
-        input: {
-            message_type:"text",
-            text: req.body.input
-        }
-    }
-
+    
     try {
         console.log("message Sent!")
-        const message = await assistant.message(payload);
+        const message = await assistant.message({
+            assistantId: process.env.WATSON_ASSISTANT_ID,
+            sessionId: req.headers.session_id,
+            input: {
+                message_type:"text",
+                text: req.body.input
+            }
+        });
         res.json(message['result'])
     } catch (err) {
         console.log("There was an error with sending a message... ")

@@ -1,4 +1,4 @@
 node_modules
 .env
 ibm-credentials.env
-ibm-credentials.env
+.txt
