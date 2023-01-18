@@ -40,12 +40,17 @@ router.get('/', (req, res) => {
 //now sending a post request
 router.post('/post', (req, res) => {
   console.log("executing a POST SQL query")
-  const body = req.body.input
+  const body = req.body
 
-  const sql = `INSERT INTO FLIGHTS VALUES (3, 'Monroe LA', 'Dallas TX')`;
+  const QueryOptions = {
+    sql : `INSERT INTO FLIGHTS (destination, Starting_des) VALUES (?, ?)`,
+    params: [destination = req.body.estination, Starting_des = req.body.Starting_des]
+
+  }
+  
   ibm_db.open(connectionString, (err, conn) => {
     
-    conn.query(sql, (err, data) => {
+    conn.query(QueryOptions, (err, data) => {
       if (err) {    
         console.error('Error executing SQL: ', err);
         res.sendStatus(500);

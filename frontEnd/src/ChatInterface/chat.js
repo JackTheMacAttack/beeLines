@@ -38,17 +38,10 @@ const ChatFace = ({session}) => {
     const checkResponseType = (WatsonRes, chatMessage) => {
         
         console.log(WatsonRes.title)
-        // if (WatsonRes.title !== null) {
-        //     setChatLog([...chatlog, chatMessage, WatsonRes.title]);
-        // }
         for (let i = 0; i <= WatsonRes.length; i++) {
             const responseData = WatsonRes[i]
             console.log(responseData.response_type)
 
-            
-            
-            
-            //trying out switch staments
             // return a function that corrisponds to what type of response we're getting
             // done: option (minus the part that clears it) and text and calander
             
@@ -69,14 +62,18 @@ const ChatFace = ({session}) => {
                 case 'connect_to_agent':
                     console.log('calling agent')
                     break;
+                case 'user_defined':
+                    console.log(responseData.user_defined.Destination)
+                    const orderData = responseData.user_defined
+                    submitOrder(orderData)
+                    console.log('SQL Data', orderData)
+                    break;
                 default:
                     console.log('cannot read type or it does not match option or text', responseData.response_type)
                     break;
                         
                     }
-                }
-
-        
+                } 
     }
 
    
@@ -104,6 +101,22 @@ const ChatFace = ({session}) => {
             }).catch(err => {console.log(err)})  
         } catch (error) {
             console.log("Error sending message", error)
+        }
+    }
+
+    const submitOrder = async (OrderData) => {
+        console.log('Submitting order', OrderData)
+        try {
+            const body = OrderData
+            const res = await axios.post(`api/db2/post`, body)
+            .then((response) => {
+                console.log(response)
+                
+            }).catch(err => {console.log(err)})  
+            console.log(res)
+            
+        } catch (error) {
+            
         }
     }
     
@@ -148,8 +161,7 @@ const ChatFace = ({session}) => {
                             event.preventDefault()
                             console.log('clicked:', event.target.value)
                             sendMessage(event.target.value)
-                            setUserOptions([])
-                                    
+                            setUserOptions([])          
                         }}
                     >
                         {option.label}
@@ -164,10 +176,8 @@ const ChatFace = ({session}) => {
             id="chatInput"
             onSubmit={(event, session) => {
                 handleSubmit(event);
-                // sendMessage(event.target.value, session)
             }}
-            >   
-        
+        >   
             <input 
                 type="text" 
                 placeholder="Ask me anything!" 
@@ -177,9 +187,7 @@ const ChatFace = ({session}) => {
                     setMessage(event.target.value)
                 }}/>
         </form>
-
     </div>
-
 }
 
 export default ChatFace
