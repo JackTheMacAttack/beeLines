@@ -54,5 +54,44 @@ router.post('/message', async (req,res) => {
 
 })
 
+//route to get flight information when sending a ticket request
+router.post('/sendingFlight', async (req,res) => {
+
+    console.log('sending flight data')
+    
+    // context.set('flightId', '31')
+    try {
+        console.log("flight variables sent!")
+
+        const message = await assistant.message({
+            assistantId: process.env.WATSON_ASSISTANT_ID,
+            sessionId: req.headers.session_id,
+            context: {
+                'skills': {
+                    'main skill': {
+                        'user_defined': {
+
+                            'flightId': req.body.flightId,
+                            'flightDes': req.body.flightDes, 
+                            'flightOrigin' : req.body.flightOrigin,
+                            'flightDate' : req.body.flightDate
+                        }
+                    }
+                }
+            },
+            input: {
+                message_type:"text",
+                text: 'sending info'
+            }
+        });
+        res.json(message['result'])
+    } catch (err) {
+        console.log("There was an error with sending a message... ")
+        res.send("There was an error processing your request.");
+        console.log(err);
+    }
+
+})
+
 //Export Routes
 module.exports = router

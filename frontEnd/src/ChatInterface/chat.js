@@ -17,6 +17,8 @@ const ChatFace = ({session}) => {
         {label: "I want to sell a hat", value: {input: {text: "I want to sell a hat"}}}
     ])
     const [calVal, setCalVal] = useState(new Date())
+    const [Flights, setFlights] = useState([])
+    const [seatOptions, setSeatOptions] = useState([])
 
     const onChange = date => { 
         setCalVal(date)
@@ -24,7 +26,7 @@ const ChatFace = ({session}) => {
         const day = calVal.getDate()
         const month = calVal.getMonth() + 1
         const year = calVal.getFullYear()
-        const dateToPass = `${month} ${day} ${year} `
+        const dateToPass = `${year}-${day}-${month} `
                     
         console.log('Clicked day!', day, month, year)
         sendMessage(dateToPass, session)
@@ -47,7 +49,6 @@ const ChatFace = ({session}) => {
             
             switch (responseData.response_type) {
                 case "option":
-                    
                     showOptions(responseData.options);
                     break;
                 case 'text':
@@ -63,9 +64,9 @@ const ChatFace = ({session}) => {
                     console.log('calling agent')
                     break;
                 case 'user_defined':
-                    console.log(responseData.user_defined.Destination)
+                    console.log('user_def response data', responseData.user_defined)
                     const orderData = responseData.user_defined
-                    submitOrder(orderData)
+                    checkUserDef(orderData)
                     console.log('SQL Data', orderData)
                     break;
                 default:
@@ -74,6 +75,27 @@ const ChatFace = ({session}) => {
                         
                     }
                 } 
+    }
+
+
+    const checkUserDef = (responseInfo) => {
+        console.log('User def response', responseInfo)
+
+        switch (responseInfo.action) {
+            case 'settingInfo':
+                CheckFlights(responseInfo.values)
+                break;
+            case 'checkingSeats':
+                checkSeats(responseInfo.values)
+                break;
+            case 'completingOrder': 
+                sendOrder(responseInfo.values)
+                break;
+            default: 
+                console.log('could not read response action', responseInfo)
+                break;
+        }
+
     }
 
    
@@ -88,11 +110,7 @@ const ChatFace = ({session}) => {
         setChatLog([...chatlog, chatMessage]);
         try {
             const body = {input:chatMessage}
-            const res = await axios.post(`api/watson/message`, body, {
-                headers: {
-                    session_id: session
-                }
-            })
+            const res = await axios.post(`api/watson/message`, body, { headers: { session_id: session } })
             .then((response) => {
                 console.log(response)
                 const newChatRes = response.data.output.generic
@@ -104,16 +122,74 @@ const ChatFace = ({session}) => {
         }
     }
 
-    const submitOrder = async (OrderData) => {
-        console.log('Submitting order', OrderData)
+    const CheckFlights = async (OrderData) => {
+        console.log('order Data:', OrderData)
+        const body = {
+            Destination:OrderData.Destination,
+            Origin:OrderData.Origin
+        }
         try {
-            const body = OrderData
-            const res = await axios.post(`api/db2/post`, body)
+            const res = await axios.get(`api/db2/checkFlight/${body.Destination}/${body.Origin}`)
             .then((response) => {
-                console.log(response)
+                console.log(response.data[0])
+                setFlights(response.data)
                 
             }).catch(err => {console.log(err)})  
             console.log(res)
+            
+        } catch (error) {
+            console.log('error checking flights', error)
+        }
+        
+    }
+
+    const checkSeats = async (flightData) => {
+        console.log('flightData', flightData)
+        try {
+            const res = axios.get(`api/db2/findSeats/${flightData.FLIGHT_ID}`).then((response) => {
+                console.log(response)
+                setSeatOptions([...response.data])
+            })
+        } catch (error) {
+            console.log('error getting seats', error)
+        }
+    }
+
+    const submitOrder = async (OrderData) => {
+        console.log('Submitting order', OrderData)
+        
+        const body = {
+            flightId: OrderData.FLIGHT_ID,
+            flightDes: OrderData.DESTINATION, 
+            flightOrigin : OrderData.ORIGIN,
+            flightDate : OrderData.TRIP_DATE
+        };
+        try {
+            
+            const res = await axios.post(`api/watson/sendingFlight`, body, { headers: { session_id: session } })
+            .then((response) => {
+                console.log('Watson response after sending JSON data', response)
+                checkResponseType(response.data.output.generic)
+               
+            }).catch(err => {console.log(err)})  
+            console.log(res)
+            setFlights([])  
+        } catch (error) {
+            
+        }
+    }
+
+    const sendOrder = async (Order) => {
+        console.log('Sending order to database', Order)
+        
+        try {
+            const body = {
+                flightId: Order.FLIGHT_ID,
+                flightDes: Order.destination, 
+                flightOrigin : Order.Origin
+            }
+            console.log(body)
+            const res = await axios.post(`api/db2/post`, body).then((response) => {console.log(response)})
             
         } catch (error) {
             
@@ -149,7 +225,7 @@ const ChatFace = ({session}) => {
         }
 
         {/* Options for when the response returns with options to make buttons out of */}
-        <div>
+        <div class="Buttons-container">
             {userOptions ? 
             userOptions.map((option) => {
                 return (
@@ -163,6 +239,7 @@ const ChatFace = ({session}) => {
                             sendMessage(event.target.value)
                             setUserOptions([])          
                         }}
+                        class="options-button"
                     >
                         {option.label}
                     </button>
@@ -170,6 +247,41 @@ const ChatFace = ({session}) => {
             }):(
                 null
             )}
+            {seatOptions ? 
+            seatOptions.map((option) => {
+                return (
+                    <button
+                        key={option.id}
+                        // type="submit"
+                        value={option.SEATNUM}
+                        onClick={(event) => {
+                            event.preventDefault()
+                            console.log('clicked:', event.target.value)
+                            sendMessage(event.target.value)
+                            setSeatOptions([])          
+                        }}
+                        class="options-button"
+                    >
+                        {option.SEATNUM} - {option.SEATTYPE}
+                    </button>)
+                }): null
+            }
+        </div>
+
+        <div className="FlightBox">
+                {Flights ? 
+                Flights.map((flight) => {
+                    return (<div> 
+                        <h2>{flight.FLIGHT_ID}</h2>
+                        <h2>{flight.DESTINATION}</h2>
+                        <h2>{flight.STARTING_DES}</h2>
+                        <h2>{flight.TRIP_DATE}</h2>
+                        <button onClick={(event) => {
+                            submitOrder(flight)
+                        }}>Buy Ticket</button>
+
+                    </div>)
+                }) : null }
         </div>
 
         <form 
