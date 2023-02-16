@@ -24,13 +24,11 @@ router.get('/checkFlight/:Destination/:Origin', (req, res) => {
         Destination = req.params.Destination, 
         Origin = req.params.Origin
         // Trip_date = req.body.LeaveDate.value
-        // destination = 'Dallas, TX (DFW)', 
-        // origin = 'Houston, TX (IAH)'
       ]
-
-
     }
+
     console.log(QueryOptions)
+    
     conn.query(QueryOptions, (err, data) => {
       if (err) {
         
@@ -75,6 +73,34 @@ router.post('/post', (req, res) => {
       }  
     });
   })
+})
+
+router.get('/orders/:id', (req, res) => {
+  ibm_db.open(connectionString, (err, conn) => {
+
+    const QueryOptions = { 
+      sql : `SELECT * FROM ORDERS WHERE (ID) = (?)`,
+      params : [
+        ID = req.params.orderID
+      ]
+
+
+    }
+    console.log(QueryOptions)
+    conn.query(QueryOptions, (err, data) => {
+      if (err) {
+        
+        console.error('Error executing SQL: ', err);
+        res.sendStatus(500);
+      } else {
+        console.log('Sending SQL data!', data)
+        res.send(data);
+      }
+        
+      
+    });
+    
+  });
 })
 
 
@@ -125,12 +151,8 @@ router.post('/fillTable', (req, res) => {
           res.send(data);
         }  
       });
-
-
-      }
+    }
   })
-
-
 }
 
 )
@@ -141,7 +163,6 @@ router.get('/findSeats/:FLIGHT_ID', (req, res) => {
 
       const QueryOptions = {
         sql : `SELECT * FROM SEATS WHERE SeatNum NOT IN (SELECT seatNum FROM TICKETS WHERE (flight_id) = (?))`,
-        
         params: [ 
           flight_id = req.params.FLIGHT_ID
         ]
@@ -156,8 +177,6 @@ router.get('/findSeats/:FLIGHT_ID', (req, res) => {
           res.send(data);
         }  
       });
-
-
   })
 })
 
